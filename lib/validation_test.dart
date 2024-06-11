@@ -1,19 +1,18 @@
 import 'dart:collection';
 import 'dart:io';
-import 'dart:math';
-import 'package:biedronka_tests/algorithm_factory/apriori_factory.dart';
-import 'package:biedronka_tests/algorithm_factory/apriori_with_time_factory.dart';
-import 'package:biedronka_tests/algorithm_factory/cosine_similarity_factory.dart';
-import 'package:biedronka_tests/algorithm_factory/preprocessed_algorithm.dart';
-import 'package:biedronka_tests/model/product.dart';
-import 'package:biedronka_tests/model/recipe_entry_full.dart';
-import 'package:mysql_client/mysql_client.dart';
-import 'package:quiver/collection.dart';
 
-import 'algorithm_factory/algorithm.dart';
+import 'package:excel/excel.dart';
+import 'package:mysql_client/mysql_client.dart';
+
+import 'algorithm_factory/apriori_factory.dart';
+import 'algorithm_factory/apriori_with_time_factory.dart';
+import 'algorithm_factory/cosine_similarity_factory.dart';
 import 'algorithm_factory/knn_factory.dart';
+import 'algorithm_factory/preprocessed_algorithm.dart';
+import 'model/product.dart';
 import 'model/recipe.dart';
 import 'model/recipe_entry.dart';
+import 'model/recipe_entry_full.dart';
 import 'model/recipe_full.dart';
 
 class UserDataRecipe {
@@ -56,67 +55,23 @@ Future<UserDataRecipe> loadOrdersOfSingleUser(MySQLConnectionPool conn, int user
   return UserDataRecipe(recipePrior, recipeTrain);
 }
 
-void main() async {
-  // Konfiguracja połączenia z bazą danych MySQL
-  final connection = MySQLConnectionPool(
-    host: 'localhost',
-    port: 3306,
-    userName: 'root',
-    password: 'ares',
-    databaseName: 'instacart',
-    maxConnections: 10,
-  );
-
-  final List<int> userIds = [
-    19604,
-  ];
-
-  for (var user in userIds) {
-    var userData = await loadOrdersOfSingleUser(connection, user);
-    var toValidate = userData.recipePrior[0];
-    var algorithm = CosineSimilarityFactory(17);
-    var preprocessed = algorithm.preprocess(userData.recipePrior);
-    var toFindIds = toValidate.entries.map((e) => e.product.id!).toSet();
-    // var x = _findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
-    var x = _findReverseTraceWithAdd(preprocessed, {5876, 17794, 19057,
-      20574,
-      24852,
-      25872,
-      31717, 34190, 44795, 45007, 46069, 47766
-    }, toValidate.recipe.time, {}, {});
-    print(x.found);
-    // {5876, 17794, 19057, 20574, 24852, 25872, 31717, 34190, 44795, 45007, 46069, 47766}
-  }
-
-  await connection.close();
-}
-
 class ReverseTrace {
   Set<int> found = {};
   Set<int> added = {};
   List<int> route = [];
-  ReverseTrace(this.found, this.added, this.route) {
-    for (var x in found){
-      if (added.contains(x)){
-        print('object');
-      }
-    }
-  }
+  ReverseTrace(this.found, this.added, this.route);
 }
 
-ReverseTrace _findReverseTraceWithAdd(PreprocessedAlgorithm preprocessedAlgorithm,Set<int> toFind, DateTime day,Set<int> currentInput, Set<String> history) {
+ReverseTrace _findReverseTraceWithAdd(PreprocessedAlgorithm preprocessedAlgorithm, Set<int> toFind, DateTime day, Set<int> currentInput, Set<String> history) {
   if (toFind.isNotEmpty) {
     SplayTreeMap<int, ReverseTrace> founded = SplayTreeMap();
-    for (var elem in toFind){
+    for (var elem in toFind) {
       var currentInputC = currentInput.toSet();
       currentInputC.add(elem);
       var toFindC = toFind.toSet();
       toFindC.remove(elem);
       var res = _findReverseTraceContinue(preprocessedAlgorithm, toFindC, day, currentInputC, history);
-      // if (res.found.containsAll({24852, 20574, 34190})){
-      //   print("object");
-      // }
-      if (res.added.isEmpty){
+      if (res.added.isEmpty) {
         var added = {elem};
         added.addAll(res.added);
         var route = [elem];
@@ -126,37 +81,23 @@ ReverseTrace _findReverseTraceWithAdd(PreprocessedAlgorithm preprocessedAlgorith
       res.added.add(elem);
       founded[res.found.length] = res;
     }
-    // var c = founded.values.toList();
-    // c.removeWhere((element) => !(element.found.contains(34190)));
-    // if (c.isNotEmpty){
-    //   print("object");
-    // }
-    // var b = founded.values.toList();
     var z = founded[founded.lastKey()!]!;
-    // if (c.isNotEmpty && !z.found.contains(34190)){
-    //   print("object");
-    // }
-    if (z.found.length + z.added.length < toFind.length){
-      print("object");
-    }
-
     return z;
   }
   return ReverseTrace({}, toFind, toFind.toList()); // not found at all
 }
 
-ReverseTrace _findReverseTraceContinue(PreprocessedAlgorithm preprocessedAlgorithm,Set<int> toFind, DateTime day,Set<int> currentInput, Set<String> history) {
+ReverseTrace _findReverseTraceContinue(PreprocessedAlgorithm preprocessedAlgorithm, Set<int> toFind, DateTime day, Set<int> currentInput, Set<String> history) {
   if (toFind.isNotEmpty && !history.contains(createHistory(currentInput))) {
     var suggested = preprocessedAlgorithm.calculate(currentInput, day);
-    print("calc");
     history.add(createHistory(currentInput));
     Set<int> validSuggestions = suggested.toSet();
     validSuggestions.removeWhere((element) => !toFind.contains(element));
-    if (validSuggestions.isNotEmpty){
-      print("Found: $validSuggestions");
+    if (validSuggestions.isNotEmpty) {
+      // print("Found: $validSuggestions");
       var toFindC = toFind.toSet();
       toFindC.removeWhere((element) => validSuggestions.contains(element));
-      if (toFindC.isEmpty){
+      if (toFindC.isEmpty) {
         return ReverseTrace(toFind, {}, currentInput.toList());
       }
       var res = _findReverseTraceWithAdd(preprocessedAlgorithm, toFindC, day, currentInput, history);
@@ -172,8 +113,119 @@ ReverseTrace _findReverseTraceContinue(PreprocessedAlgorithm preprocessedAlgorit
   }
   return ReverseTrace({}, toFind, toFind.toList()); // not found at all or calculation again
 }
-String createHistory(Set<int> ids){
+
+String createHistory(Set<int> ids) {
   var l = ids.toList();
   l.sort();
   return l.join(',');
+}
+
+void saveResultsToExcel(List<Map<String, dynamic>> results, String filePath) {
+  var excel = Excel.createExcel();
+  Sheet sheetObject = excel['Sheet1'];
+
+  // Dodanie nagłówków
+  sheetObject.appendRow(['userId', 'method', 'found', 'added', 'arguments']);
+
+  // Dodanie wyników
+  for (var result in results) {
+    sheetObject.appendRow([result['userId'], result['method'], result['found'], result['added'], result['arguments']]);
+  }
+
+  // Kodowanie danych do formatu Excel
+  var fileBytes = excel.encode();
+
+  // Zapis pliku na dysk
+  if (fileBytes != null) {
+    File(filePath)
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(fileBytes);
+  }
+}
+
+void main() async {
+  // Konfiguracja połączenia z bazą danych MySQL
+  final connection = MySQLConnectionPool(
+    host: 'localhost',
+    port: 3306,
+    userName: 'root',
+    password: 'ares',
+    databaseName: 'instacart',
+    maxConnections: 10,
+  );
+
+  final List<int> userIds = [
+    19604,
+  ];
+  List<Map<String, dynamic>> results = [];
+
+  for (var user in userIds) {
+    var userData = await loadOrdersOfSingleUser(connection, user);
+    var toValidate = userData.recipePrior[0];
+
+    // Apriori
+    for (double minSupport = 21.0; minSupport >= 1.0; minSupport -= 1.0) {
+      var algorithm = AprioriFactory(minSupport);
+      var preprocessed = algorithm.preprocess(userData.recipePrior);
+      var validateResult = _findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
+      results.add({
+        'userId': user,
+        'method': 'Apriori',
+        'found': validateResult.found.length,
+        'added': validateResult.added.length,
+        'arguments': minSupport
+      });
+      print(results.last);
+    }
+
+    // AprioriWithTime
+    for (double minSupport = 21.0; minSupport >= 1.0; minSupport -= 1.0) {
+      var algorithm = AprioriWithTimeFactory(minSupport);
+      var preprocessed = algorithm.preprocess(userData.recipePrior);
+      var validateResult = _findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
+      results.add({
+        'userId': user,
+        'method': 'AprioriWithTime',
+        'found': validateResult.found.length,
+        'added': validateResult.added.length,
+        'arguments': minSupport
+      });
+      print(results.last);
+    }
+
+    // KNN
+    for (int k = 21; k >= 1; k -= 1) {
+      var algorithm = KNNFactory(k);
+      var preprocessed = algorithm.preprocess(userData.recipePrior);
+      var validateResult = _findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
+      results.add({
+        'userId': user,
+        'method': 'KNN',
+        'found': validateResult.found.length,
+        'added': validateResult.added.length,
+        'arguments': k
+      });
+      print(results.last);
+    }
+
+    // CosineSimilarity
+    for (int k = 21; k >= 1; k -= 1) {
+      var algorithm = CosineSimilarityFactory(k);
+      var preprocessed = algorithm.preprocess(userData.recipePrior);
+      var validateResult = _findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
+      results.add({
+        'userId': user,
+        'method': 'CosineSimilarity',
+        'found': validateResult.found.length,
+        'added': validateResult.added.length,
+        'arguments': k
+      });
+      print(results.last);
+    }
+  }
+
+  await connection.close();
+
+  // Zapis wyników do pliku Excel
+  saveResultsToExcel(results, 'results.xlsx');
 }
