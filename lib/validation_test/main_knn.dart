@@ -1,6 +1,6 @@
 import 'package:biedronka_tests/algorithm_factory/knn_factory.dart';
-import 'package:biedronka_tests/validation_test/data_helper.dart';
-import 'package:biedronka_tests/validation_test/excel_helper.dart';
+import 'package:biedronka_tests/data_helper.dart';
+import 'package:biedronka_tests/excel_helper.dart';
 import 'package:mysql_client/mysql_client.dart';
 
 import 'reverse_trace.dart';
@@ -27,7 +27,7 @@ void main() async {
       var validateResult =
       ReverseTrace.findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
       var result = {'userId': user, 'method': 'KNN', 'found': validateResult.found.length, 'added': validateResult.added.length, 'arguments': k};
-      ExcelHelper.appendResultToExcel(result, filePath);
+      ExcelHelper.appendValidationResultToExcel(result, filePath);
     }
   }
 

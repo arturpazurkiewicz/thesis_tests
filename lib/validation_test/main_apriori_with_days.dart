@@ -1,4 +1,4 @@
-import 'package:biedronka_tests/algorithm_factory/cosine_similarity_factory.dart';
+import 'package:biedronka_tests/algorithm_factory/apriori_with_days_factory.dart';
 import 'package:biedronka_tests/data_helper.dart';
 import 'package:biedronka_tests/excel_helper.dart';
 import 'package:mysql_client/mysql_client.dart';
@@ -16,17 +16,37 @@ void main() async {
     maxConnections: 10,
   );
 
-  String filePath = 'results_cosine_similarity.xlsx';
+  var userIds = [
+    85602,
+    188093,
+    116051,
+    143118,
+    148162,
+    12942,
+    178632,
+    48897,
+    108946,
+    161809,
+    80828,
+    190212,
+    78879,
+    202623,
+    // 186935,
+    // 110479,
+    181970,
+  ];
 
-  for (int k = 21; k >= 1; k -= 1) {
+  String filePath = 'results_apriori_with_days.xlsx';
+
+  for (double minSupport = 3.0; minSupport >= 1.0; minSupport -= 1.0) {
     for (var user in userIds) {
       var userData = await DataHelper.loadOrdersOfSingleUser(connection, user);
       var toValidate = userData.recipeTrain[0];
-      var algorithm = CosineSimilarityFactory(k);
+      var algorithm = AprioriWithDaysFactory(minSupport);
       var preprocessed = algorithm.preprocess(userData.recipePrior);
       var validateResult =
       ReverseTrace.findReverseTraceWithAdd(preprocessed, toValidate.entries.map((e) => e.product.id!).toSet(), toValidate.recipe.time, {}, {});
-      var result = {'userId': user, 'method': 'CosineSimilarity', 'found': validateResult.found.length, 'added': validateResult.added.length, 'arguments': k};
+      var result = {'userId': user, 'method': 'AprioriWithDays', 'found': validateResult.found.length, 'added': validateResult.added.length, 'arguments': minSupport};
       ExcelHelper.appendValidationResultToExcel(result, filePath);
     }
   }
