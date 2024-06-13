@@ -5,14 +5,22 @@ import 'package:biedronka_tests/algorithm_factory/unprocessed_algorithm.dart';
 
 import '../model/recipe_full.dart';
 
-Future<TimeAndMemoryResult> timeAndMemoryComplexity(UnprocessedAlgorithm unprocessedAlgorithm,  List<RecipeFull> history,Set<int> input, DateTime day) async {
+TimeAndMemoryResult timeAndMemoryComplexity(UnprocessedAlgorithm unprocessedAlgorithm, List<RecipeFull> history, Set<int> input, DateTime day) {
   final receivePort = ReceivePort();
   try {
-    await Isolate.spawn(
-      _isolateEntryPoint,
-      _IsolateMessage(unprocessedAlgorithm,history,input,day, receivePort.sendPort),
-    );
-    return await receivePort.first as TimeAndMemoryResult;
+    // await Isolate.spawn(
+    //   _isolateEntryPoint,
+    //   _IsolateMessage(unprocessedAlgorithm,history,input,day, receivePort.sendPort),
+    // );
+
+    // return await receivePort.first as TimeAndMemoryResult;
+    int beforeMemory = ProcessInfo.currentRss;
+    final stopwatch = Stopwatch()..start();
+    var processedAlgorithm = unprocessedAlgorithm.preprocess(history);
+    processedAlgorithm.calculate(input, day);
+    stopwatch.stop();
+    int afterMemory = ProcessInfo.currentRss;
+    return TimeAndMemoryResult(stopwatch.elapsedMilliseconds, afterMemory - beforeMemory);
   } finally {
     receivePort.close();
   }
