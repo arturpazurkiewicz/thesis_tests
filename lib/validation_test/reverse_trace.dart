@@ -5,13 +5,7 @@ import '../algorithm_factory/preprocessed_algorithm.dart';
 class ReverseTrace {
   Set<int> found = {};
   Set<int> added = {};
-  ReverseTrace(this.found, this.added) {
-    for (var x in found) {
-      if (added.contains(x)) {
-        print('object');
-      }
-    }
-  }
+  ReverseTrace(this.found, this.added);
 
   static ReverseTrace findReverseTraceWithAdd(PreprocessedAlgorithm preprocessedAlgorithm, Set<int> toFind, DateTime day, Set<int> currentInput, Set<String> history) {
     if (toFind.isNotEmpty) {
@@ -25,7 +19,6 @@ class ReverseTrace {
         if (res.added.isEmpty) {
           var added = {elem};
           added.addAll(res.added);
-          var route = [elem];
           return ReverseTrace(res.found, added);
         }
         res.added.add(elem);
