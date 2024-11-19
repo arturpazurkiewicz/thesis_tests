@@ -4,7 +4,7 @@ import '../../model/recipe_full.dart';
 import 'vector_prediction.dart';
 
 class KNN extends VectorPrediction {
-  KNN(List<RecipeFull> transactions) : super(transactions, false);
+  KNN(List<RecipeFull> transactions) : super(transactions, true);
 
   @override
   double calculateDistance(List<double> vec1, List<double> vec2) {

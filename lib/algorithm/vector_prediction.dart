@@ -221,8 +221,11 @@ abstract class VectorPrediction {
     }
 
     for (var i = 0; i < vectorData.length; i++) {
-      var distance = calculateDistance(inputVector, vectorData[i]);
-      neighbours.add(Neighbor(vectorData[i], getNamesFromDataVector(vectorData[i]), distance));
+      var names = getNamesFromDataVector(vectorData[i]);
+      if (!inputNames.containsAll(names)) {
+        var distance = calculateDistance(inputVector, vectorData[i]);
+        neighbours.add(Neighbor(vectorData[i], names, distance));
+      }
     }
 
     if (sortAsc) {
@@ -232,14 +235,20 @@ abstract class VectorPrediction {
     }
 
     List<Neighbor> selectedNeighbours = [];
-
+    List<Neighbor> tempNeighbours = [];
     for (var neighbour in neighbours) {
       if (resultShouldBeShown(inputNames, neighbour.names)) {
         selectedNeighbours.add(neighbour);
-        if (selectedNeighbours.length == k) {
-          break;
-        }
+      } else {
+        tempNeighbours.add(neighbour);
       }
+      if (selectedNeighbours.length == k) {
+        break;
+      }
+    }
+    int toAdd = min(tempNeighbours.length, k - selectedNeighbours.length);
+    if (toAdd > 0) {
+      selectedNeighbours.addAll(tempNeighbours.getRange(0, toAdd));
     }
 
     return selectedNeighbours;

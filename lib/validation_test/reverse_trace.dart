@@ -31,16 +31,21 @@ class ReverseTrace {
   }
 
   static ReverseTrace _findReverseTraceContinue(PreprocessedAlgorithm preprocessedAlgorithm, Set<int> toFind, DateTime day, Set<int> currentInput, Set<String> history) {
-    if (toFind.isNotEmpty && !history.contains(createHistory(currentInput))) {
+    var h = createHistory(currentInput);
+    if (toFind.isNotEmpty && !history.contains(h)) {
       var suggested = preprocessedAlgorithm.calculate(currentInput, day);
-      history.add(createHistory(currentInput));
+      history.add(h);
       Set<int> validSuggestions = suggested.toSet();
+      var x = validSuggestions.toList();
+      x.sort();
+      print("$h -> $x");
       validSuggestions.removeWhere((element) => !toFind.contains(element));
       if (validSuggestions.isNotEmpty) {
         print("Found: $validSuggestions");
         var toFindC = toFind.toSet();
         toFindC.removeWhere((element) => validSuggestions.contains(element));
         if (toFindC.isEmpty) {
+          // print("End of this trace");
           return ReverseTrace(toFind, {});
         }
         var res = findReverseTraceWithAdd(preprocessedAlgorithm, toFindC, day, currentInput, history);
@@ -52,6 +57,7 @@ class ReverseTrace {
       }
       return findReverseTraceWithAdd(preprocessedAlgorithm, toFind, day, currentInput, history);
     }
+    // print("End of this trace");
     return ReverseTrace({}, toFind); // not found at all or calculation again
   }
 }
@@ -61,5 +67,7 @@ class ReverseTrace {
 String createHistory(Set<int> ids) {
   var l = ids.toList();
   l.sort();
-  return l.join(',');
+  var r = l.join(',');
+  // print("H: $r");
+  return r;
 }
